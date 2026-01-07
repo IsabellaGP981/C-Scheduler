@@ -202,19 +202,20 @@ Boolean initReadyList(void) {
 /* xxxx batch processing. A blocked list needs to be implemented 	     xxxx */
 // add this process to the ready list
 
-int iter = 0;
 Boolean addReady(pid_t pid) {
+  int i;
+  size_t count = readyList->count;
+  if (pid   == NO_PROCESS     ) return FALSE; //not a processs
+  if (count >= NUM_PROCESSES  ) return FALSE; //list is full
+  if (!processTable[pid].valid) return FALSE; //invalid procsees
 
-  printf("Adding %d\n", pid);
-  if (iter++ > 10) abort();
-  
+  for (i=0; i<count; i++) {
+    if (readyList->elems[i].pid == pid) return TRUE; //is already in list!
+  }
 
-  if (readyList->count >= NUM_PROCESSES) return FALSE; //list is full
-  size_t i = readyList->count;
-
+  processTable[pid].status = ready; // set state = ready
   readyList->elems[i].pid  = pid;   //add new ready element
   readyList->count++;               //update size of list
-  processTable[pid].status = ready; // set state = ready
 
 	return TRUE;
 }

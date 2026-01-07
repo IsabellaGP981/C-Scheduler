@@ -58,18 +58,32 @@ void coreLoop(void)
 			schedulingEvent= sim_runProcess(currentProcess, QUANTUM);
 			logPidEvent(currentProcess, schedulingEvent, "Process left CPU");
 			// handle all processes that turned "ready" in the meantime (unblocked or started (in case of multiprogramming) )
-			releaseEvent = sim_check4UnblockedOrNew(&readyProcess);
-			while (releaseEvent != none)
-			{
-				/* Without multiprogramming this loop shall never be entered, but: */
-				/* This must be extended for multiprogramming. */ 
-				/* Add Code for handling of started or unblocked processes here. 
-				/* For RR it is simply enqueing to the readylist, other schedulers may require more actions */
-				addReady(readyProcess);
-				
-				/* Last command in the while loop is the following (must alway remain the last command in the loop) */
-				releaseEvent = sim_check4UnblockedOrNew(&readyProcess);	// check for further events, must stay in!
-			}
+//TODO
+releaseEvent = sim_check4UnblockedOrNew(&readyProcess);
+while (releaseEvent != none)
+{
+  switch (releaseEvent) {
+    case unblocked:
+      removeBlocked(readyProcess);
+      processTable[readyProcess].status = ready;
+      addReady(readyProcess);
+      logPid(readyProcess, "IO completed, process unblocked and switched to ready state");
+      break;
+
+    case started:
+      processTable[readyProcess].status = ready;
+      addReady(readyProcess);
+      logPid(readyProcess, "New process initialised and now ready");
+      break;
+
+    default:
+      logGeneric("ERROR in Simulation handling unblocked/new processes while CPU busy");
+      exit(-1);
+  }
+
+  releaseEvent = sim_check4UnblockedOrNew(&readyProcess);
+      }
+
 			// Now all processes are dealt with that caused events while the last scheduled process used the CPU
 			// determine required action based on the scheduling event caused by last running process
 			// Depending on the scheduler, extensions to the following switch-case statement are required
@@ -123,8 +137,7 @@ void coreLoop(void)
           addReady(readyProcess);		// add this process to the ready list
           logPid(readyProcess, "New process initialised and now ready"); 
           break;
-        default: 
-          // any other return value must be an error
+        default: // any other return value must be an error
           logGeneric("ERROR in Simulation handling unblocked/new processes when IDLE");
           exit(-1);		// terminate as simulation is not working correctly
           break;
